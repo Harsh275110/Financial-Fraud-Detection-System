@@ -1,0 +1,20 @@
+{
+    "test_size": 0.2,
+    "random_state": 42,
+    "outlier_threshold": 3,
+    "categorical_features": [
+        "merchant_category",
+        "merchant_name"
+    ],
+    "numerical_features": [
+        "amount",
+        "time",
+        "n_transactions_day"
+    ],
+    "target_column": "is_fraud",
+    "feature_engineering": {
+        "time_features": true,
+        "amount_features": true,
+        "frequency_features": true
+    }
+} 

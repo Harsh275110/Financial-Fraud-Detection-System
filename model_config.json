@@ -1,0 +1,25 @@
+{
+    "model_type": "xgboost",
+    "model_params": {
+        "xgboost": {
+            "n_estimators": 100,
+            "max_depth": 5,
+            "learning_rate": 0.1,
+            "random_state": 42,
+            "n_jobs": -1,
+            "scale_pos_weight": 20
+        },
+        "isolation_forest": {
+            "contamination": 0.05,
+            "random_state": 42,
+            "n_jobs": -1
+        },
+        "neural_network": {
+            "layers": [64, 32, 1],
+            "dropout_rate": 0.2,
+            "learning_rate": 0.001,
+            "epochs": 50,
+            "batch_size": 32
+        }
+    }
+} 

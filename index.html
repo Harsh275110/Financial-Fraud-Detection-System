@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Fraud Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .fraud-high { color: #dc3545; }
+        .fraud-medium { color: #ffc107; }
+        .fraud-low { color: #198754; }
+        .risk-bar {
+            height: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .explanation-card {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Financial Fraud Detection System</h1>
+        
+        <!-- Transaction Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Submit Transaction</h5>
+                <form id="transactionForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="amount" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="time" class="form-label">Time (24-hour format)</label>
+                            <input type="number" class="form-control" id="time" min="0" max="23" step="0.5" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="n_transactions_day" class="form-label">Number of Transactions Today</label>
+                            <input type="number" class="form-control" id="n_transactions_day" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="merchant_category" class="form-label">Merchant Category</label>
+                            <select class="form-control" id="merchant_category" required>
+                                <option value="retail">Retail</option>
+                                <option value="travel">Travel</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="food">Food & Dining</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="merchant_name" class="form-label">Merchant Name</label>
+                            <input type="text" class="form-control" id="merchant_name" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Check for Fraud</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="card explanation-card" id="resultsCard">
+            <div class="card-body">
+                <h5 class="card-title">Fraud Analysis Results</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Fraud Probability</h6>
+                        <div class="progress">
+                            <div class="progress-bar" id="fraudProbBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <p class="mt-2">Risk Level: <span id="riskLevel"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Risk Factors</h6>
+                        <div id="riskFactors"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const transaction = {
+                amount: parseFloat(document.getElementById('amount').value),
+                time: parseFloat(document.getElementById('time').value),
+                n_transactions_day: parseInt(document.getElementById('n_transactions_day').value),
+                merchant_category: document.getElementById('merchant_category').value,
+                merchant_name: document.getElementById('merchant_name').value,
+                customer_id: 'CUST' + Math.random().toString(36).substr(2, 9),
+                transaction_id: 'TXN' + Math.random().toString(36).substr(2, 9)
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(transaction)
+                });
+
+                const result = await response.json();
+                displayResults(result);
+            } catch (error) {
+                alert('Error processing transaction: ' + error.message);
+            }
+        });
+
+        function displayResults(result) {
+            const resultsCard = document.getElementById('resultsCard');
+            const fraudProbBar = document.getElementById('fraudProbBar');
+            const riskLevel = document.getElementById('riskLevel');
+            const riskFactors = document.getElementById('riskFactors');
+            
+            // Show results card
+            resultsCard.style.display = 'block';
+            
+            // Update probability bar
+            const probability = result.fraud_probability * 100;
+            fraudProbBar.style.width = probability + '%';
+            fraudProbBar.className = 'progress-bar';
+            
+            if (probability > 70) {
+                fraudProbBar.classList.add('bg-danger');
+                riskLevel.className = 'fraud-high';
+                riskLevel.textContent = 'High Risk';
+            } else if (probability > 30) {
+                fraudProbBar.classList.add('bg-warning');
+                riskLevel.className = 'fraud-medium';
+                riskLevel.textContent = 'Medium Risk';
+            } else {
+                fraudProbBar.classList.add('bg-success');
+                riskLevel.className = 'fraud-low';
+                riskLevel.textContent = 'Low Risk';
+            }
+            
+            // Display risk factors
+            riskFactors.innerHTML = '';
+            Object.entries(result.risk_factors)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([factor, importance]) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'risk-bar';
+                    bar.style.width = (importance * 100) + '%';
+                    bar.style.backgroundColor = '#007bff';
+                    
+                    const label = document.createElement('div');
+                    label.textContent = `${factor}: ${(importance * 100).toFixed(1)}%`;
+                    
+                    riskFactors.appendChild(label);
+                    riskFactors.appendChild(bar);
+                });
+        }
+    </script>
+</body>
+</html> 
